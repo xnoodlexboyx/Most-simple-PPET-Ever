@@ -40,7 +40,7 @@ def main():
     for i in range(num_pufs_for_plot):
         for j in range(i + 1, num_pufs_for_plot):
             for k in range(num_challenges):
-                hd = calculate_uniqueness([all_puf_responses_for_uniqueness[i][k]], [all_puf_responses_for_uniqueness[j][k]])
+                hd = np.sum(np.array(all_puf_responses_for_uniqueness[i][k]) != np.array(all_puf_responses_for_uniqueness[j][k]))
                 inter_chip_hamming_distances_for_plot.append(hd)
 
     plot_uniqueness_histogram(inter_chip_hamming_distances_for_plot)
