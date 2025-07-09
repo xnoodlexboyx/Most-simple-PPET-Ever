@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import json
+import time
 from ppet.puf.puf_model import XORArbiterPUF, ArbiterPUF
 from ppet.analysis.metrics import calculate_uniqueness, calculate_reliability, calculate_bit_aliasing, calculate_attack_accuracy
 from ppet.visualization.plots import plot_uniqueness_histogram, plot_reliability_line_graph, plot_bit_aliasing_bar_graph
@@ -15,6 +17,7 @@ def run_analysis(config):
     print("Starting PPET Simulation...")
     sim_params = config['simulation']
     output_settings = config['output']
+    results = {}
 
     # Set random seed for reproducibility
     np.random.seed(sim_params['random_seed'])
@@ -47,6 +50,7 @@ def run_analysis(config):
     # 2. Uniqueness Analysis
     print("\nPerforming Uniqueness Analysis...")
     uniqueness_score = calculate_uniqueness(puf_instances, num_challenges, stages_per_arbiter)
+    results['uniqueness'] = uniqueness_score
     print(f"Average Inter-Chip Hamming Distance (Uniqueness): {uniqueness_score:.4f}")
 
     # Generate Hamming distances for plotting
@@ -81,9 +85,10 @@ def run_analysis(config):
     test_challenge = np.random.randint(0, 2, stages_per_arbiter)
 
     for noise in noise_levels:
-        reliability = calculate_reliability(test_puf, test_challenge, num_readings_reliability, noise_level=noise)
+        reliability = calculate_reliability(test_puf, test_challenge, num_readings_reliability, temperature=25.0 + noise * 100, voltage=1.0)
         reliability_scores.append(reliability)
         print(f"  Noise Level: {noise:.2f}, Reliability: {reliability:.4f}")
+    results['reliability'] = dict(zip(noise_levels.tolist(), reliability_scores))
 
     if output_settings.get('save_figures', False):
         save_path = os.path.join(figures_dir, "reliability_line_graph.png")
@@ -96,6 +101,7 @@ def run_analysis(config):
     # 4. Bit-Aliasing Analysis
     print("\nPerforming Bit-Aliasing Analysis...")
     bit_aliasing_results = calculate_bit_aliasing(puf_instances, num_challenges, stages_per_arbiter)
+    results['bit_aliasing'] = bit_aliasing_results
     print(f"Bit-Aliasing Results: {bit_aliasing_results}")
     
     if output_settings.get('save_figures', False):
@@ -122,10 +128,19 @@ def run_analysis(config):
                 attack_params['num_train_crps'],
                 attack_params['num_test_crps']
             )
+            results['attack_accuracy'] = accuracy
             print(f"Logistic Regression Attack Accuracy: {accuracy:.4f}")
         else:
             print(f"Warning: Unknown attack type '{attack_params['type']}' specified in config.")
 
+
+    # 6. Save results
+    if output_settings.get('save_metrics', False):
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        results_filename = os.path.join(results_dir, f"results_{timestamp}.json")
+        with open(results_filename, 'w') as f:
+            json.dump(results, f, indent=4)
+        print(f"\nResults saved to: {results_filename}")
 
     print("\nPPET Simulation Complete.")
 

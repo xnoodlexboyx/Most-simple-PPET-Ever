@@ -1,27 +1,27 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
-def plot_uniqueness_histogram(hamming_distances, title="Uniqueness Histogram (Inter-Chip Hamming Distances)", save_path=None):
+def plot_uniqueness_histogram(hamming_distances, title="Uniqueness Histogram (Inter-Chip Hamming Distances)", save_path=None, save_format="png"):
     """
-    Plots a histogram of inter-chip Hamming distances to visualize uniqueness.
+    Plots a histogram of inter-chip Hamming distances to visualize uniqueness using seaborn.
     If save_path is provided, saves the figure instead of showing it.
     """
-    plt.figure(figsize=(8, 6))
-    plt.hist(hamming_distances, bins=np.arange(0, 2, 0.1), edgecolor='black')
-    plt.title(title)
-    plt.xlabel("Hamming Distance")
-    plt.ylabel("Frequency")
-    plt.grid(axis='y', alpha=0.75)
+    plt.figure(figsize=(10, 6))
+    sns.set_style("whitegrid")
+    sns.histplot(hamming_distances, bins=np.arange(0, 1.1, 0.05), kde=True)
+    plt.title(title, fontsize=16)
+    plt.xlabel("Normalized Hamming Distance", fontsize=12)
+    plt.ylabel("Frequency", fontsize=12)
     if save_path:
-        plt.savefig(save_path)
-        plt.close() # Close the figure to free memory
+        plt.savefig(f"{save_path}.{save_format}", format=save_format, bbox_inches='tight')
+        plt.close()
     else:
         plt.show()
 
-def plot_bit_aliasing_bar_graph(bit_aliasing_data, title="Bit-Aliasing Frequency", save_path=None):
+def plot_bit_aliasing_bar_graph(bit_aliasing_data, title="Bit-Aliasing Frequency", save_path=None, save_format="png"):
     """
-    Plots a bar graph of bit-aliasing frequencies.
-    bit_aliasing_data is expected to be a dictionary like {bit_position: aliasing_frequency}.
+    Plots a bar graph of bit-aliasing frequencies using seaborn.
     If save_path is provided, saves the figure instead of showing it.
     """
     if not bit_aliasing_data:
@@ -31,33 +31,34 @@ def plot_bit_aliasing_bar_graph(bit_aliasing_data, title="Bit-Aliasing Frequency
     bit_positions = list(bit_aliasing_data.keys())
     aliasing_frequencies = list(bit_aliasing_data.values())
 
-    plt.figure(figsize=(8, 6))
-    plt.bar([str(pos) for pos in bit_positions], aliasing_frequencies, color='skyblue')
-    plt.title(title)
-    plt.xlabel("Bit Position")
-    plt.ylabel("Aliasing Frequency")
-    plt.ylim(0, 1.1)
-    plt.grid(axis='y', alpha=0.75)
+    plt.figure(figsize=(10, 6))
+    sns.set_style("whitegrid")
+    sns.barplot(x=[str(pos) for pos in bit_positions], y=aliasing_frequencies, palette="viridis")
+    plt.title(title, fontsize=16)
+    plt.xlabel("Bit Position", fontsize=12)
+    plt.ylabel("Aliasing Frequency", fontsize=12)
+    plt.ylim(0, 1.0)
     if save_path:
-        plt.savefig(save_path)
-        plt.close() # Close the figure to free memory
+        plt.savefig(f"{save_path}.{save_format}", format=save_format, bbox_inches='tight')
+        plt.close()
     else:
         plt.show()
 
-def plot_reliability_line_graph(noise_levels, reliability_scores, title="Reliability vs. Noise Level", save_path=None):
+def plot_reliability_line_graph(noise_levels, reliability_scores, title="Reliability vs. Noise Level", save_path=None, save_format="png"):
     """
-    Plots a line graph of reliability scores against increasing noise levels.
+    Plots a line graph of reliability scores against increasing noise levels using seaborn.
     If save_path is provided, saves the figure instead of showing it.
     """
-    plt.figure(figsize=(8, 6))
-    plt.plot(noise_levels, reliability_scores, marker='o', linestyle='-')
-    plt.title(title)
-    plt.xlabel("Noise Level")
-    plt.ylabel("Reliability Score")
+    plt.figure(figsize=(10, 6))
+    sns.set_style("whitegrid")
+    sns.lineplot(x=noise_levels, y=reliability_scores, marker='o', color='b')
+    plt.title(title, fontsize=16)
+    plt.xlabel("Noise Level", fontsize=12)
+    plt.ylabel("Reliability Score", fontsize=12)
+    plt.ylim(0, 1.05)
     plt.grid(True)
-    plt.ylim(0, 1.1) # Reliability is between 0 and 1
     if save_path:
-        plt.savefig(save_path)
-        plt.close() # Close the figure to free memory
+        plt.savefig(f"{save_path}.{save_format}", format=save_format, bbox_inches='tight')
+        plt.close()
     else:
         plt.show()
