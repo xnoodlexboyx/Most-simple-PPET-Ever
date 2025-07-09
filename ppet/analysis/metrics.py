@@ -66,3 +66,59 @@ def calculate_reliability(puf_instance, challenge, num_readings, noise_level=0.1
     # Reliability is 1 - average bit error rate
     average_bit_error_rate = np.mean(error_counts)
     return 1 - average_bit_error_rate
+
+def calculate_bit_aliasing(puf_instances, num_challenges, challenge_length):
+    """
+    Calculates bit aliasing for a set of PUF instances.
+    Bit aliasing measures how often a specific bit position in a response matches
+    across multiple PUF instances for the same challenge.
+    Returns a dictionary where keys are bit positions and values are the
+    aliasing frequency (0 to 1).
+    """
+    all_challenges = [np.random.randint(0, 2, challenge_length) for _ in range(num_challenges)]
+    
+    # Collect responses for all PUFs and all challenges
+    all_puf_responses = []
+    for puf in puf_instances:
+        puf_responses_for_challenges = [puf.generate_response(c) for c in all_challenges]
+        all_puf_responses.append(puf_responses_for_challenges)
+
+    num_pufs = len(puf_instances)
+    
+    # Initialize counts for 0s and 1s for each bit position
+    # This assumes a single bit response from generate_response
+    # If generate_response returns a bit array, this logic needs adjustment.
+    # For XORArbiterPUF, it returns a single bit.
+    
+    # We need to collect all responses for each challenge and then analyze bit positions.
+    # Since XORArbiterPUF returns a single bit, we'll analyze the "bit position" of that single bit.
+    # This interpretation might need refinement if PUFs return multi-bit responses.
+
+    # To align with the proposal's "Heatmaps: Visualize bit-aliasing across multiple challenges and instances.
+    # Each cell represents the frequency of a bit being "0" or "1" at a given position."
+    # and "Bar Graphs: Show the aliasing frequency for specific bit positions."
+    # This implies multi-bit responses or a different interpretation of "bit position".
+
+    # Given our current simple XORArbiterPUF returns a single bit,
+    # "bit position" refers to the single output bit.
+    # We'll calculate the frequency of this bit being 0 or 1 across instances for each challenge.
+
+    bit_aliasing_data = {0: []} # For the single output bit position
+
+    for k in range(num_challenges):
+        responses_for_this_challenge = [all_puf_responses[i][k] for i in range(num_pufs)]
+        
+        # Count frequency of 0s and 1s for this "bit position" (the single response bit)
+        count_zeros = responses_for_this_challenge.count(0)
+        count_ones = responses_for_this_challenge.count(1)
+        
+        # Aliasing frequency can be defined as the maximum of (count_zeros/total, count_ones/total)
+        # Or, more simply, the frequency of the most common bit.
+        if num_pufs > 0:
+            aliasing_freq = max(count_zeros, count_ones) / num_pufs
+            bit_aliasing_data[0].append(aliasing_freq)
+        else:
+            bit_aliasing_data[0].append(0.0) # No PUFs
+
+    # Return average aliasing frequency for the single bit position
+    return {0: np.mean(bit_aliasing_data[0])}
