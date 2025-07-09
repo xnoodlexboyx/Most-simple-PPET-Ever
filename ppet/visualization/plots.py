@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_uniqueness_histogram(hamming_distances, title="Uniqueness Histogram (Inter-Chip Hamming Distances)"):
+def plot_uniqueness_histogram(hamming_distances, title="Uniqueness Histogram (Inter-Chip Hamming Distances)", save_path=None):
     """
     Plots a histogram of inter-chip Hamming distances to visualize uniqueness.
+    If save_path is provided, saves the figure instead of showing it.
     """
     plt.figure(figsize=(8, 6))
     plt.hist(hamming_distances, bins=np.arange(0, 2, 0.1), edgecolor='black')
@@ -11,12 +12,17 @@ def plot_uniqueness_histogram(hamming_distances, title="Uniqueness Histogram (In
     plt.xlabel("Hamming Distance")
     plt.ylabel("Frequency")
     plt.grid(axis='y', alpha=0.75)
-    plt.show()
+    if save_path:
+        plt.savefig(save_path)
+        plt.close() # Close the figure to free memory
+    else:
+        plt.show()
 
-def plot_bit_aliasing_bar_graph(bit_aliasing_data, title="Bit-Aliasing Frequency"):
+def plot_bit_aliasing_bar_graph(bit_aliasing_data, title="Bit-Aliasing Frequency", save_path=None):
     """
     Plots a bar graph of bit-aliasing frequencies.
     bit_aliasing_data is expected to be a dictionary like {bit_position: aliasing_frequency}.
+    If save_path is provided, saves the figure instead of showing it.
     """
     if not bit_aliasing_data:
         print("No bit aliasing data to plot.")
@@ -32,11 +38,16 @@ def plot_bit_aliasing_bar_graph(bit_aliasing_data, title="Bit-Aliasing Frequency
     plt.ylabel("Aliasing Frequency")
     plt.ylim(0, 1.1)
     plt.grid(axis='y', alpha=0.75)
-    plt.show()
+    if save_path:
+        plt.savefig(save_path)
+        plt.close() # Close the figure to free memory
+    else:
+        plt.show()
 
-def plot_reliability_line_graph(noise_levels, reliability_scores, title="Reliability vs. Noise Level"):
+def plot_reliability_line_graph(noise_levels, reliability_scores, title="Reliability vs. Noise Level", save_path=None):
     """
     Plots a line graph of reliability scores against increasing noise levels.
+    If save_path is provided, saves the figure instead of showing it.
     """
     plt.figure(figsize=(8, 6))
     plt.plot(noise_levels, reliability_scores, marker='o', linestyle='-')
@@ -45,4 +56,8 @@ def plot_reliability_line_graph(noise_levels, reliability_scores, title="Reliabi
     plt.ylabel("Reliability Score")
     plt.grid(True)
     plt.ylim(0, 1.1) # Reliability is between 0 and 1
-    plt.show()
+    if save_path:
+        plt.savefig(save_path)
+        plt.close() # Close the figure to free memory
+    else:
+        plt.show()

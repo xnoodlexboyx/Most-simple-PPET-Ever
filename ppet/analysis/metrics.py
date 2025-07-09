@@ -10,61 +10,77 @@ def hamming_distance(response1, response2):
 
 def calculate_uniqueness(puf_instances, num_challenges, challenge_length):
     """
-    Calculates the uniqueness metric for a set of PUF instances.
-    Uniqueness is typically measured by the average inter-chip Hamming distance.
+    Calculates the uniqueness metric for a set of PUF instances using vectorized operations.
+    Uniqueness is measured by the average inter-chip Hamming distance.
     """
-    all_challenges = [np.random.randint(0, 2, challenge_length) for _ in range(num_challenges)]
-    
-    all_puf_responses = []
-    for puf in puf_instances:
-        puf_responses_for_challenges = [puf.generate_response(c) for c in all_challenges]
-        all_puf_responses.append(puf_responses_for_challenges)
-
-    inter_chip_hamming_distances = []
     num_pufs = len(puf_instances)
-    
+    if num_pufs < 2:
+        return 0.0  # Not enough PUFs to compare
+
+    # Generate all challenges at once
+    all_challenges = np.random.randint(0, 2, size=(num_challenges, challenge_length))
+
+    # Generate responses for all PUFs and all challenges
+    # Response matrix shape: (num_pufs, num_challenges)
+    all_puf_responses = np.array(
+        [[puf.generate_response(c) for c in all_challenges] for puf in puf_instances]
+    )
+
+    # Calculate pairwise Hamming distances in a vectorized way
+    total_hd = 0
+    num_pairs = 0
     for i in range(num_pufs):
         for j in range(i + 1, num_pufs):
-            # Compare responses of PUF i and PUF j for the same challenges
-            for k in range(num_challenges):
-                # Hamming distance is calculated between single bits (responses)
-                hd = hamming_distance([all_puf_responses[i][k]], [all_puf_responses[j][k]])
-                inter_chip_hamming_distances.append(hd)
+            # XORing the responses and summing the result gives the Hamming distance
+            hd = np.sum(all_puf_responses[i, :] != all_puf_responses[j, :])
+            total_hd += hd
+            num_pairs += 1
+
+    # The average Hamming distance is normalized by the number of challenges
+    # and the number of PUF pairs.
+    if num_pairs == 0:
+        return 0.0
+
+    # The average inter-chip HD is the total HD divided by (num_pairs * num_challenges)
+    # However, since we summed the HD over all challenges, we just need to divide by num_challenges
+    # and then average over all pairs.
+    # A simpler way: total_hd is the sum of all pairwise distances over all challenges.
+    # The number of comparisons is num_pairs * num_challenges.
+    average_hd = total_hd / (num_pairs * num_challenges)
     
-    if not inter_chip_hamming_distances:
-        return 0.0 # No pairs to compare
-
-    return np.mean(inter_chip_hamming_distances)
+    return average_hd
 
 
-def calculate_reliability(puf_instance, challenge, num_readings, noise_level=0.1):
+def calculate_reliability(puf_instance, challenge, num_readings, temperature=25.0, voltage=1.0, noise_level=0.0):
     """
-    Calculates the reliability metric for a single PUF instance under simulated noise.
-    Reliability is typically measured by the intra-chip Hamming distance (bit error rate).
+    Calculates the reliability metric for a single PUF instance under environmental stress.
+    Reliability is measured by comparing responses under stress to a golden response at nominal conditions.
     """
-    original_response = puf_instance.generate_response(challenge)
+    # Generate the "golden" response at nominal conditions (e.g., 25°C, 1.0V)
+    golden_response = puf_instance.generate_response(challenge, temperature=25.0, voltage=1.0)
     
     error_counts = []
     for _ in range(num_readings):
-        # Simulate noise by randomly flipping bits in the challenge or response generation
-        # For simplicity, we'll simulate noise by re-generating the response with a chance of error
-        # A more accurate simulation would involve modifying the PUF's internal state or challenge.
+        # Generate a "noisy" response under the specified environmental conditions
+        noisy_response = puf_instance.generate_response(challenge, temperature=temperature, voltage=voltage)
         
-        # Here, we'll simulate noise by adding a small random perturbation to the decision boundary
-        # or by directly flipping the response bit with a certain probability.
-        
-        # For a simple Arbiter PUF, we can simulate noise by slightly altering the delays
-        # or by introducing a probability of bit flip in the final response.
-        
-        # Let's use a simple bit-flip probability for now.
-        noisy_response = original_response
+        # Add a simple bit-flip noise model on top of the environmental stress
         if np.random.rand() < noise_level:
-            noisy_response = 1 - original_response # Flip the bit
-        
-        error_counts.append(hamming_distance([original_response], [noisy_response]))
+            noisy_response = 1 - noisy_response
+
+        # Ensure responses are numpy arrays for comparison
+        golden_response_arr = np.array(golden_response).flatten()
+        noisy_response_arr = np.array(noisy_response).flatten()
+
+        error_counts.append(hamming_distance(golden_response_arr, noisy_response_arr))
             
     # Reliability is 1 - average bit error rate
-    average_bit_error_rate = np.mean(error_counts)
+    # The total number of bits is num_readings * number of bits in response
+    total_bits = num_readings * len(np.array(golden_response).flatten())
+    if total_bits == 0:
+        return 1.0 # Perfect reliability if no bits to compare
+
+    average_bit_error_rate = np.sum(error_counts) / total_bits
     return 1 - average_bit_error_rate
 
 def calculate_bit_aliasing(puf_instances, num_challenges, challenge_length):
@@ -122,3 +138,21 @@ def calculate_bit_aliasing(puf_instances, num_challenges, challenge_length):
 
     # Return average aliasing frequency for the single bit position
     return {0: np.mean(bit_aliasing_data[0])}
+
+def calculate_attack_accuracy(attack, puf, num_train_crps, num_test_crps):
+    """
+    Trains an attack model and evaluates its accuracy.
+
+    :param attack: An instance of an Attack class.
+    :param puf: The PUF instance to be attacked.
+    :param num_train_crps: The number of CRPs to use for training the attack.
+    :param num_test_crps: The number of CRPs to use for testing the attack's accuracy.
+    :return: The prediction accuracy of the attack (float between 0 and 1).
+    """
+    # Train the attack model
+    attack.train(puf, num_train_crps)
+
+    # Evaluate the attack model
+    accuracy = attack.evaluate(puf, num_test_crps)
+    
+    return accuracy
