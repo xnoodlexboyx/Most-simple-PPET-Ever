@@ -136,8 +136,8 @@ def calculate_bit_aliasing(puf_instances, num_challenges, challenge_length):
         else:
             bit_aliasing_data[0].append(0.0) # No PUFs
 
-    # Return average aliasing frequency for the single bit position
-    return {0: np.mean(bit_aliasing_data[0])}
+    # Return the full distribution of aliasing frequencies for each bit position
+    return bit_aliasing_data
 
 def calculate_attack_accuracy(attack, puf, num_train_crps, num_test_crps):
     """

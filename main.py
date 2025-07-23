@@ -4,7 +4,7 @@ import json
 import time
 from ppet.puf.puf_model import XORArbiterPUF, ArbiterPUF
 from ppet.analysis.metrics import calculate_uniqueness, calculate_reliability, calculate_bit_aliasing, calculate_attack_accuracy
-from ppet.visualization.plots import plot_uniqueness_histogram, plot_reliability_line_graph, plot_bit_aliasing_bar_graph
+from ppet.visualization.plots import plot_uniqueness_histogram, plot_reliability_line_graph, plot_bit_aliasing_bar_graph, plot_bit_aliasing_distribution
 from ppet.utils.config_manager import load_config
 from ppet.attack.attack_model import LogisticRegressionAttack
 
@@ -105,11 +105,19 @@ def run_analysis(config):
     print(f"Bit-Aliasing Results: {bit_aliasing_results}")
     
     if output_settings.get('save_figures', False):
-        save_path = os.path.join(figures_dir, "bit_aliasing_bar_graph.png")
-        plot_bit_aliasing_bar_graph(bit_aliasing_results, save_path=save_path)
+        save_path_bar = os.path.join(figures_dir, "bit_aliasing_bar_graph.png")
+        # For the bar graph, we need the mean aliasing, so we calculate it here.
+        mean_aliasing = {k: np.mean(v) for k, v in bit_aliasing_results.items()}
+        plot_bit_aliasing_bar_graph(mean_aliasing, save_path=save_path_bar)
         print("Bit-Aliasing bar graph saved.")
+
+        save_path_dist = os.path.join(figures_dir, "bit_aliasing_distribution.png")
+        plot_bit_aliasing_distribution(bit_aliasing_results, save_path=save_path_dist)
+        print("Bit-Aliasing distribution plot saved.")
     else:
-        plot_bit_aliasing_bar_graph(bit_aliasing_results)
+        mean_aliasing = {k: np.mean(v) for k, v in bit_aliasing_results.items()}
+        plot_bit_aliasing_bar_graph(mean_aliasing)
+        plot_bit_aliasing_distribution(bit_aliasing_results)
 
     # 5. Attack Simulation
     if config.get('attack', {}).get('enabled', False):
